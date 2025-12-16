@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>演示卡片</title>
+  <style>
+    :root{
+      --bg:#f6f6f6;
+      --card:#ffffff;
+      --ink:#111;
+      --muted:#8a8a8a;
+      --shadow: 0 10px 30px rgba(0,0,0,.12);
+      --radius: 18px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bot: env(safe-area-inset-bottom, 0px);
+    }
+    *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+    html,body{height:100%; margin:0; font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Noto Sans SC",system-ui,sans-serif; background:var(--bg); color:var(--ink);}
+    .app{
+      min-height:100vh;
+      padding: calc(14px + var(--safe-top)) 14px calc(16px + var(--safe-bot));
+      display:flex; flex-direction:column; gap:12px;
+    }
+
+    /* Top bar */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 6px 2px;
+    }
+    .icon-btn{
+      width:36px;height:36px;border-radius:10px;
+      display:grid;place-items:center;
+      color:#222;
+    }
+    .hamburger{width:18px;height:12px; position:relative;}
+    .hamburger::before,.hamburger::after,.hamburger span{
+      content:""; position:absolute; left:0; right:0; height:2px; background:#222; border-radius:2px;
+    }
+    .hamburger::before{top:0;}
+    .hamburger span{top:5px;}
+    .hamburger::after{bottom:0;}
+
+    .seg{
+      flex:1;
+      max-width:260px;
+      margin:0 10px;
+      background:#e9e9e9;
+      border-radius:999px;
+      display:flex;
+      overflow:hidden;
+    }
+    .seg button{
+      flex:1;border:0;background:transparent;
+      padding:10px 0;
+      font-weight:700;
+      color:#555;
+    }
+    .seg button.active{
+      background:#2b2b2b;
+      color:#fff;
+    }
+    .plus{
+      font-size:28px; line-height:1;
+      transform: translateY(-1px);
+    }
+
+    /* Time row */
+    .timerow{
+      display:flex; align-items:center; justify-content:center;
+      gap:10px; color:#333; font-weight:700;
+      padding: 8px 0 2px;
+    }
+    .clock{
+      width:28px;height:28px;border-radius:999px;
+      border:2px solid #c9c9c9;
+      position:relative;
+    }
+    .clock::before{
+      content:""; position:absolute; width:2px; height:9px; background:#8d8d8d;
+      left:50%; top:6px; transform:translateX(-50%);
+      border-radius:2px;
+    }
+    .clock::after{
+      content:""; position:absolute; width:7px; height:2px; background:#8d8d8d;
+      left:50%; top:50%; transform:translate(0,-50%);
+      border-radius:2px;
+    }
+
+    /* Card */
+    .cardwrap{display:flex; align-items:center; justify-content:center; margin-top:6px;}
+    .card{
+      width:min(92vw, 420px);
+      aspect-ratio: 3 / 4.05;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+      user-select:none;
+    }
+
+    /* Demo watermark (always visible) */
+    .wm{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+      opacity:.12;
+      font-weight:900;
+      letter-spacing:.22em;
+      transform: rotate(-18deg);
+      font-size: clamp(22px, 6vw, 34px);
+      text-transform:uppercase;
+    }
+
+    /* Replace with your own photo */
+    .photo{
+      position:absolute;
+      left:16px; right:16px;
+      top:16px; bottom:16px;
+      border-radius: 14px;
+      overflow:hidden;
+      background:#ddd;
+      cursor:pointer;
+    }
+    .photo img{
+      width:100%; height:100%;
+      object-fit:cover;
+      display:block;
+      transform: scale(1.0);
+    }
+
+    /* Bottom row buttons (non-functional look) */
+    .bottombar{
+      margin-top:auto;
+      background:#fff;
+      border-radius:16px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.08);
+      overflow:hidden;
+      display:flex;
+    }
+    .bottombar button{
+      flex:1; border:0; background:transparent;
+      padding:18px 10px;
+      font-weight:800;
+      color:#1a1a1a;
+      display:flex; align-items:center; justify-content:center;
+      gap:10px;
+    }
+    .bottombar button + button{border-left:1px solid #eee;}
+    .scanicon{
+      width:22px;height:22px;border:2px solid #2b73ff;border-radius:6px; position:relative;
+    }
+    .scanicon::before,.scanicon::after{
+      content:""; position:absolute; inset:4px; border:2px dashed rgba(43,115,255,.45); border-radius:4px;
+    }
+
+    /* Fullscreen photo overlay (like your 2nd screen) */
+    .overlay{
+      position:fixed; inset:0;
+      background: radial-gradient(ellipse at center, rgba(10,18,35,.92), rgba(0,0,0,.92));
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: calc(16px + var(--safe-top)) 16px calc(16px + var(--safe-bot));
+      z-index:999;
+    }
+    .overlay.show{display:flex;}
+    .overlay .big{
+      width:min(94vw, 520px);
+      aspect-ratio: 3 / 4.05;
+      border-radius: 22px;
+      overflow:hidden;
+      box-shadow: 0 22px 60px rgba(0,0,0,.55);
+      position:relative;
+      transform: translateY(10px) scale(.98);
+      opacity:0;
+      transition: transform .22s ease, opacity .22s ease;
+      background:#fff;
+    }
+    .overlay.show .big{
+      transform: translateY(0) scale(1);
+      opacity:1;
+    }
+    .overlay .big img{width:100%; height:100%; object-fit:cover; display:block;}
+    .close{
+      position:fixed;
+      bottom: calc(24px + var(--safe-bot));
+      width:64px;height:64px;border-radius:999px;
+      border:0;
+      background: rgba(255,255,255,.14);
+      color:#fff;
+      font-size:34px;
+      display:grid;
+      place-items:center;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Disable interactions except photo tap */
+    .disabled{pointer-events:none; opacity:1;}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="icon-btn" aria-hidden="true">
+        <div class="hamburger"><span></span></div>
+      </div>
+
+      <div class="seg">
+        <button class="active disabled" type="button">身份证</button>
+        <button class="disabled" type="button">资格证</button>
+      </div>
+
+      <div class="icon-btn plus disabled" aria-hidden="true">+</div>
+    </div>
+
+    <div class="timerow">
+      <div class="clock" aria-hidden="true"></div>
+      <div id="dt">2025.12.17(三) 01:25:02</div>
+    </div>
+
+    <div class="cardwrap">
+      <div class="card" aria-label="demo card">
+        <div class="wm">DEMO · 样例</div>
+
+        <!-- 여기에 네가 만든 주민등록증 사진(또는 카드 이미지)을 넣으면 됨 -->
+        <div class="photo" id="photoTap" role="button" aria-label="open photo">
+          <img src="your_photo.jpg" alt="card photo" />
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:center; gap:8px; color:#444; font-weight:800;">
+      <span style="color:#f0b400;">●</span>
+      <span>法律效力说明</span>
+    </div>
+
+    <div class="bottombar">
+      <button type="button" class="disabled">
+        <span class="scanicon" aria-hidden="true"></span> 我的二维码
+      </button>
+      <button type="button" class="disabled">
+        <span class="scanicon" aria-hidden="true"></span> 扫描二维码
+      </button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="big" id="bigCard">
+      <img src="your_photo.jpg" alt="expanded card" />
+      <div class="wm">DEMO · 样例</div>
+    </div>
+    <button class="close" id="closeBtn" aria-label="close">×</button>
+  </div>
+
+  <script>
+    // Live clock (optional)
+    function pad(n){return String(n).padStart(2,'0');}
+    function tick(){
+      const d = new Date();
+      const y=d.getFullYear(), m=pad(d.getMonth()+1), day=pad(d.getDate());
+      const wd = ["日","一","二","三","四","五","六"][d.getDay()];
+      const hh=pad(d.getHours()), mm=pad(d.getMinutes()), ss=pad(d.getSeconds());
+      document.getElementById('dt').textContent = `${y}.${m}.${day}(周${wd}) ${hh}:${mm}:${ss}`;
+    }
+    setInterval(tick, 1000); tick();
+
+    // Photo -> overlay transition
+    const overlay = document.getElementById('overlay');
+    const photoTap = document.getElementById('photoTap');
+    const closeBtn = document.getElementById('closeBtn');
+
+    photoTap.addEventListener('click', async () => {
+      overlay.classList.add('show');
+
+      // Try to enter fullscreen (UC/Chromium may allow only on user gesture; if blocked, it just stays "full-viewport")
+      const el = document.documentElement;
+      if (el.requestFullscreen) { try { await el.requestFullscreen(); } catch(e){} }
+      else if (el.webkitRequestFullscreen) { try { await el.webkitRequestFullscreen(); } catch(e){} }
+    });
+
+    function closeOverlay(){
+      overlay.classList.remove('show');
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+
+    closeBtn.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeOverlay(); });
+  </script>
+</body>
+</html>
